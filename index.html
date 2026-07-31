@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -5,75 +6,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Госдолг США</title>
 <style>
-  html,body{margin:0;padding:0;background:#ffffff;font-family:Arial,Helvetica,sans-serif;}
+  html,body{height:100%;margin:0;padding:0;background:#fff;font-family:Arial,Helvetica,sans-serif;}
   .wrap{
-    max-width:360px;margin:8px auto;padding:14px 12px 16px;
-    border:2px solid #cc0000;border-radius:6px;text-align:center;
+    box-sizing:border-box;height:100%;width:100%;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;
+    padding:14px;border:2px solid #cc0000;border-radius:10px;text-align:center;
     box-shadow:0 0 0 3px #ffecec inset;
   }
-  .title{
-    color:#cc0000;font-weight:bold;font-size:15px;letter-spacing:.5px;
-    text-transform:uppercase;margin-bottom:10px;
-  }
-  .num{
-    color:#cc0000;font-weight:bold;font-family:"Courier New",monospace;
-    font-size:26px;line-height:1.1;white-space:nowrap;
-  }
-  .num .cents{font-size:16px;color:#e05555;}
-  .date{color:#9a9a9a;font-size:12px;margin-top:10px;}
-  .date b{color:#666;}
+  .title{color:#cc0000;font-weight:bold;font-size:clamp(13px,4.5vw,18px);
+    letter-spacing:.5px;text-transform:uppercase;margin-bottom:10px;}
+  .num{color:#cc0000;font-weight:bold;font-family:"Courier New",monospace;
+    font-size:clamp(16px,7vw,34px);line-height:1.05;white-space:nowrap;}
 </style>
 </head>
 <body>
   <div class="wrap">
     <div class="title">Госдолг США</div>
     <div class="num" id="num">$—</div>
-    <div class="date">На дату: <b id="date">—</b></div>
   </div>
-
 <script>
-// Официальный источник: U.S. Treasury "Debt to the Penny" (FiscalData API, без авторизации)
-var API = "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_to_penny"
-        + "?sort=-record_date&fields=record_date,tot_pub_debt_out_amt&page[size]=1";
-
-// Оценка прироста для "тикания" между суточными обновлениями (~$3.86 млрд/день)
-var PER_SEC = 3.86e9 / 86400; // ≈ 44676 $/сек
-
-var base = null, baseTs = null;
-
-function fmt(v){
-  var whole = Math.floor(v);
-  var cents = Math.round((v - whole) * 100);
-  if (cents === 100){ whole += 1; cents = 0; }
-  var s = whole.toLocaleString("en-US");
-  var c = (cents < 10 ? "0" : "") + cents;
-  return '$' + s + '<span class="cents">.' + c + '</span>';
-}
-
-function tick(){
-  if (base === null) return;
-  var elapsed = (Date.now() - baseTs) / 1000;
-  document.getElementById("num").innerHTML = fmt(base + PER_SEC * elapsed);
-}
-
-function load(){
-  fetch(API)
-    .then(function(r){ return r.json(); })
-    .then(function(d){
-      var row = d.data[0];
-      base = parseFloat(row.tot_pub_debt_out_amt);
-      baseTs = Date.now();
-      document.getElementById("date").textContent = row.record_date;
-      tick();
-    })
-    .catch(function(){
-      document.getElementById("num").textContent = "данные недоступны";
-    });
-}
-
-load();
-setInterval(tick, 100);          // тикаем по копейкам
-setInterval(load, 6*60*60*1000); // раз в 6 часов подтягиваем свежую суточную цифру
+var API="https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_to_penny?sort=-record_date&fields=record_date,tot_pub_debt_out_amt&page[size]=1";
+var PER_SEC=3.86e9/86400, base=null, baseTs=null;
+function fmt(v){var w=Math.floor(v),c=Math.round((v-w)*100);if(c===100){w++;c=0;}
+  return '$'+w.toLocaleString("en-US")+'.'+(c<10?'0':'')+c;}
+function tick(){if(base!==null)document.getElementById("num").textContent=fmt(base+PER_SEC*(Date.now()-baseTs)/1000);}
+function load(){fetch(API).then(r=>r.json()).then(d=>{var row=d.data[0];
+  base=parseFloat(row.tot_pub_debt_out_amt);baseTs=Date.now();tick();
+}).catch(()=>{document.getElementById("num").textContent="данные недоступны";});}
+load();setInterval(tick,100);setInterval(load,6*60*60*1000);
 </script>
 </body>
 </html>
